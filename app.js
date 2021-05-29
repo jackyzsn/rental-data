@@ -2,6 +2,7 @@ var express = require('express');
 var path = require('path');
 var logger = require('morgan');
 var apiRouter = require('./routes/api');
+var authRouter = require('./routes/auth');
 var session = require('express-session');
 var http = require('http');
 var app = express();
@@ -24,6 +25,11 @@ const speedLimiter = slowDown({
 //  apply to all requests
 app.use(speedLimiter);
 
+//initialize passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Configure session
 app.use(
   session({
     secret: process.env.cookieEncryptKey,
@@ -39,6 +45,7 @@ app.use(
   })
 );
 
+// Connect Mongo DB
 try {
   mongoose.connect(
     process.env.mongoUrl,
@@ -65,10 +72,12 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use(express.static('dist'));
-
+// Node routers
 app.use('/api', apiRouter);
+app.use('/auth', authRouter);
 
+// Else routes go to static REACT app
+app.use(express.static('dist'));
 app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
@@ -84,6 +93,7 @@ app.use(function (err, req, res, next) {
   res.render('error');
 });
 
+// start http server
 var httpServer = http.createServer(app);
 
 httpServer.listen(process.env.serverPort, () => {
