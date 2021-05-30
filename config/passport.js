@@ -61,8 +61,8 @@ passport.use(
   new FacebookStrategy(
     {
       // Option for Facebook strategy
-      clientID: process.env.fackbookClientID,
-      clientSecret: process.env.fackbookClientSecret,
+      clientID: process.env.facebookClientId,
+      clientSecret: process.env.facebookClientSecret,
       callbackURL: '/auth/facebook/callback',
       profileFields: ['email', 'picture.type(large)', 'displayName', 'first_name', 'last_name'],
     },

@@ -1,14 +1,15 @@
+require('dotenv').config({ path: './.env' });
 var express = require('express');
 var path = require('path');
 var logger = require('morgan');
 var apiRouter = require('./routes/api');
 var authRouter = require('./routes/auth');
 var session = require('express-session');
+var passport = require('passport');
 var http = require('http');
 var app = express();
 var mongoose = require('mongoose');
-
-require('dotenv').config({ path: './.env' });
+require('./config/passport');
 
 const slowDown = require('express-slow-down');
 
@@ -75,6 +76,10 @@ app.use(express.urlencoded({ extended: false }));
 // Node routers
 app.use('/api', apiRouter);
 app.use('/auth', authRouter);
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'pug');
 
 // Else routes go to static REACT app
 app.use(express.static('dist'));

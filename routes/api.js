@@ -5,7 +5,10 @@ router.post('/login', (req, res) => {
   console.log('... Login, Add user session.. ' + req.sessionID);
   var request = req.body.request;
   console.log('... request.. ' + JSON.stringify(request));
-  var name = request.data.user;
+  var authCode = request.data.authCode;
+
+  // Check authCode if it's in database
+
   var result = {};
   req.session.logged = true;
   req.session.user = name;

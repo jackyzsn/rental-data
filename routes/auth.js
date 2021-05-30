@@ -97,13 +97,14 @@ function toRedirect(req, res) {
   new AuthToken({
     _id: new mongoose.mongo.ObjectId(),
     authCode: randomId,
+    userId: req.user.id,
     expiredAt: expiredAt,
   }).save(function (err) {
     if (err) {
-      res.redirect(req.baseUrl);
+      res.redirect('/');
     } else {
       res.header('Authorization', randomId);
-      res.redirect(req.baseUrl);
+      res.redirect('/');
     }
   });
 }
