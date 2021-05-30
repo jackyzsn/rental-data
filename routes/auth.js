@@ -32,6 +32,7 @@ router.get(
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     callbackURL: '/auth/google/redirect/web',
+    //callbackURL: 'https://rentaldata.glitch.me/auth/google/redirect/web',
   })
 );
 
@@ -41,6 +42,7 @@ router.get(
   passport.authenticate('google', {
     failureRedirect: '/auth/google/web',
     callbackURL: '/auth/google/redirect/web',
+    //callbackURL: 'https://rentaldata.glitch.me/auth/google/redirect/web',
   }),
   (req, res) => {
     toRedirect(req, res);
@@ -73,6 +75,7 @@ router.get(
   passport.authenticate('facebook', {
     scope: 'email',
     callbackURL: '/auth/facebook/callback/web',
+    //callbackURL: 'https://rentaldata.glitch.me/auth/facebook/callback/web',
   })
 );
 
@@ -82,6 +85,7 @@ router.get(
   passport.authenticate('facebook', {
     failureRedirect: '/auth/facebook/web',
     callbackURL: '/auth/facebook/callback/web',
+    //callbackURL: 'https://rentaldata.glitch.me/auth/facebook/callback/web',
   }),
   (req, res) => {
     toRedirect(req, res);
@@ -103,7 +107,7 @@ function toRedirect(req, res) {
     if (err) {
       res.redirect('/');
     } else {
-      res.header('Authorization', randomId);
+      res.cookie('Authorization', randomId, { maxAge: 30 * 1000 });
       res.redirect('/');
     }
   });
