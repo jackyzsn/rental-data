@@ -3,6 +3,7 @@ var router = express.Router();
 var mongoose = require('mongoose');
 var AuthToken = require('../models/authToken-model');
 var User = require('../models/user-model');
+var AuthUser = require('../models/authUser-model');
 var moment = require('moment');
 
 router.post('/addsession', (req, res) => {
@@ -37,8 +38,18 @@ router.post('/addsession', (req, res) => {
               thumbnail: user.thumbnail,
             };
 
-            req.session.save();
-            console.log('... Session added for : ' + authCode);
+            // check if it's verified
+            AuthUser.findOne({ userId: user.id }, function (error, authUser) {
+              if (error) {
+                console.log('... AuthUser not found: ' + authToken.userId + '..');
+              }
+              if (authUser) {
+                req.session.verified = authUser.verified ? authUser.verified : false;
+                req.session.isAdmin = authUser.isAdmin ? authUser.isAdmin : false;
+              }
+              req.session.save();
+              console.log('... Session added for : ' + authCode);
+            });
           }
         });
       } else {
@@ -65,18 +76,59 @@ router.post('/checksession', (req, res) => {
     if (req.session.logged) {
       result.status = '0';
       result.logged = true;
+      result.verified = req.session.verified ? req.session.verified : false;
+      result.isAdmin = req.session.isAdmin ? req.session.isAdmin : false;
       result.user = req.session.user;
     } else {
       result.status = '0';
       result.logged = false;
+      result.verified = false;
+      result.isAdmin = false;
     }
   } else {
     console.log('... No session found..');
     result.status = '0';
     result.logged = false;
+    result.verified = false;
+    result.isAdmin = false;
   }
 
   res.send(result);
+});
+
+router.post('/verify', (req, res) => {
+  console.log('... Verify request .. ');
+
+  var request = req.body.request;
+  var note = request.data.note;
+
+  var result = {};
+  if (req.session && req.session.logged && req.session.user) {
+    AuthUser.findOne({ userId: req.session.user.id }, function (err, authUser) {
+      if (authUser) {
+        // existing user, update request
+        if (!authUser.verified) {
+          authUser.verifyRequest = note;
+          authUser.save();
+        }
+      } else {
+        // save new user
+        if (!err) {
+          new AuthUser({
+            _id: new mongoose.mongo.ObjectId(),
+            userId: req.session.user.id,
+            verifyRequest: note,
+          }).save();
+        }
+      }
+    });
+
+    result.status = '0';
+    res.send(result);
+  } else {
+    console.log('... Skip request, no session found .. ');
+    res.send(401, 'Not Authorized!');
+  }
 });
 
 router.post('/clearsession', (req, res) => {
