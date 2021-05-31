@@ -3,7 +3,7 @@ var Schema = mongoose.Schema;
 
 var authUserSchema = new Schema({
   _id: Schema.Types.ObjectId,
-  userId: String,
+  userId: { type: mongoose.Schema.ObjectId, ref: 'users' },
   verifyRequest: String,
   verified: Boolean,
   verifiedAt: String,

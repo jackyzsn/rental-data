@@ -131,6 +131,80 @@ router.post('/verify', (req, res) => {
   }
 });
 
+router.post('/getverifyrequest', (req, res) => {
+  console.log('... Retrieve all verify requests .. ');
+
+  var result = {};
+  if (req.session && req.session.logged && req.session.user && req.session.isAdmin) {
+    AuthUser.aggregate([
+      { $match: { isAdmin: { $in: [null, false] } } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+    ]).exec((err, authUsers) => {
+      if (authUsers) {
+        const vUsers = authUsers.map((tmpUser) => {
+          const vUser = {};
+          vUser.id = tmpUser._id;
+          vUser.requestNote = tmpUser.verifyRequest;
+          vUser.verified = tmpUser.verified ? true : false;
+          vUser.verifiedAt = tmpUser.verifiedAt;
+          vUser.firstName = tmpUser.user[0].firstName;
+          vUser.lastName = tmpUser.user[0].lastName;
+          vUser.email = tmpUser.user[0].email;
+          vUser.thumbnail = tmpUser.user[0].thumbnail;
+          vUser.fromWhere = tmpUser.user[0].googleId
+            ? 'Google'
+            : tmpUser.user[0].facebookId
+            ? 'Facebook'
+            : 'Unknown';
+
+          return vUser;
+        });
+
+        result.status = '0';
+        result.data = vUsers;
+        res.send(result);
+      }
+    });
+  } else {
+    console.log('... Skip request, no session or not admin .. ');
+    res.send(401, 'Not Authorized!');
+  }
+});
+
+router.post('/verifyuser', (req, res) => {
+  var request = req.body.request;
+  var authUserId = request.data.authUserId;
+  var propertyInfo = request.data.propertyInfo;
+
+  var result = {};
+  if (req.session && req.session.logged && req.session.user && req.session.isAdmin) {
+    AuthUser.findById(authUserId, function (err, authUser) {
+      if (authUser) {
+        authUser.verified = true;
+        authUser.verifiedAt = moment().format();
+        authUser.propertyInfo = propertyInfo;
+
+        authUser.save();
+
+        result.status = '0';
+        res.send(result);
+      } else {
+        console.log('... Skip request, no user found .. ');
+      }
+    });
+  } else {
+    console.log('... Skip request, no session or not admin .. ');
+    res.send(401, 'Not Authorized!');
+  }
+});
+
 router.post('/clearsession', (req, res) => {
   console.log('... Clear user session.. ' + req.sessionID);
 
