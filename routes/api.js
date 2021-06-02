@@ -11,12 +11,15 @@ router.post('/addsession', (req, res) => {
   var request = req.body.request;
   console.log('... request.. ' + JSON.stringify(request));
   var authCode = request.data.authCode;
+  var result = {};
 
   // Check authCode if it's in database
   AuthToken.findOne({ authCode: authCode }, function (err, authToken) {
     if (err) {
       // AuthCode not found, end
       console.log('... AuthCode not found: ' + authCode + ', not adding session..');
+      result.status = '9';
+      res.send(result);
     }
 
     if (authToken) {
@@ -49,23 +52,27 @@ router.post('/addsession', (req, res) => {
               }
               req.session.save();
               console.log('... Session added for : ' + authCode);
+
+              result.status = '0';
+              res.send(result); // Can't put outside because async, it doesn't wait for the DB save finished
             });
           }
         });
       } else {
         // AuthCode expired..
         console.log('... AuthCode expired: ' + authCode + ', not adding session..');
+
+        result.status = '0';
+        res.send(result);
       }
     } else {
       // AuthCode not found, end
       console.log('... AuthCode invalid: ' + authCode + ', not adding session..');
+
+      result.status = '0';
+      res.send(result);
     }
   });
-
-  var result = {};
-
-  result.status = '0';
-  res.send(result);
 });
 
 router.post('/checksession', (req, res) => {
@@ -121,10 +128,9 @@ router.post('/verify', (req, res) => {
           }).save();
         }
       }
+      result.status = '0';
+      res.send(result);
     });
-
-    result.status = '0';
-    res.send(result);
   } else {
     console.log('... Skip request, no session found .. ');
     res.send(401, 'Not Authorized!');
@@ -199,6 +205,8 @@ router.post('/verifyuser', (req, res) => {
         res.send(result);
       } else {
         console.log('... Skip request, no user found .. ');
+        result.status = '0';
+        res.send(result);
       }
     });
   } else {
@@ -224,6 +232,8 @@ router.post('/property', (req, res) => {
         res.send(result);
       } else {
         console.log('... Skip request, no user found .. ');
+        result.status = '0';
+        res.send(result);
       }
     });
   } else {
@@ -273,6 +283,8 @@ router.post('/submitwater', (req, res) => {
         res.send(result);
       } else {
         console.log('... Skip request, no user found .. ');
+        result.status = '0';
+        res.send(result);
       }
     });
   } else {
