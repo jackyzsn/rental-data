@@ -14,7 +14,9 @@ var authUserSchema = new Schema({
       {
         month: String,
         reading: String,
+        enteredAt: String,
         acceptFlag: Boolean,
+        acceptedAt: String,
       },
     ],
   },

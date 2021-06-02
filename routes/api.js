@@ -183,6 +183,8 @@ router.post('/verifyuser', (req, res) => {
   var authUserId = request.data.authUserId;
   var propertyInfo = request.data.propertyInfo;
 
+  console.log('... Verify requests: ' + authUserId + '..');
+
   var result = {};
   if (req.session && req.session.logged && req.session.user && req.session.isAdmin) {
     AuthUser.findById(authUserId, function (err, authUser) {
@@ -201,6 +203,80 @@ router.post('/verifyuser', (req, res) => {
     });
   } else {
     console.log('... Skip request, no session or not admin .. ');
+    res.send(401, 'Not Authorized!');
+  }
+});
+
+router.post('/property', (req, res) => {
+  console.log('... Retrieve property requests ..');
+
+  var result = {};
+  if (req.session && req.session.logged && req.session.verified) {
+    const userId = req.session.user.id;
+    AuthUser.findOne({ userId: userId }, function (err, authUser) {
+      if (authUser) {
+        result.status = '0';
+        result.data = {};
+        result.data.description = authUser.propertyInfo;
+        result.data.data = {};
+        result.data.data.waterMeter = authUser.propertyData.waterMeter;
+
+        res.send(result);
+      } else {
+        console.log('... Skip request, no user found .. ');
+      }
+    });
+  } else {
+    console.log('... Skip request, no session or not verified .. ');
+    res.send(401, 'Not Authorized!');
+  }
+});
+
+router.post('/submitwater', (req, res) => {
+  var request = req.body.request;
+  var month = request.data.month;
+  var reading = request.data.reading;
+
+  console.log('... Submit meter requests: ' + month + ', ' + reading + '..');
+
+  var result = {};
+  if (req.session && req.session.logged && req.session.verified) {
+    const userId = req.session.user.id;
+    AuthUser.findOne({ userId: userId }, function (err, authUser) {
+      if (authUser) {
+        var workWaterMeter = authUser.propertyData.waterMeter;
+
+        var notFound = true;
+        var i;
+        for (i = 0; i < workWaterMeter.length; i++) {
+          if (month === workWaterMeter[i].month) {
+            workWaterMeter[i].reading = reading;
+            workWaterMeter[i].enteredAt = moment().format();
+            notFound = false;
+            break;
+          }
+        }
+
+        if (notFound) {
+          authUser.propertyData.waterMeter.push({
+            month: month,
+            reading: reading,
+            enteredAt: moment().format(),
+            acceptFlag: false,
+          });
+        } else {
+          authUser.propertyData.waterMeter = workWaterMeter;
+        }
+        authUser.save();
+
+        result.status = '0';
+        res.send(result);
+      } else {
+        console.log('... Skip request, no user found .. ');
+      }
+    });
+  } else {
+    console.log('... Skip request, no session or not verified .. ');
     res.send(401, 'Not Authorized!');
   }
 });

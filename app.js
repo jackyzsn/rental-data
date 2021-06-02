@@ -23,8 +23,8 @@ const speedLimiter = slowDown({
   // etc.
 });
 
-//  apply to all requests
-app.use(speedLimiter);
+//  apply to all requests -- too fast to run out.
+//app.use(speedLimiter);
 
 //initialize passport
 app.use(passport.initialize());
