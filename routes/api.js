@@ -164,11 +164,13 @@ router.post('/getverifyrequest', (req, res) => {
           vUser.lastName = tmpUser.user[0].lastName;
           vUser.email = tmpUser.user[0].email;
           vUser.thumbnail = tmpUser.user[0].thumbnail;
+          vUser.propertyInfo = tmpUser.propertyInfo;
           vUser.fromWhere = tmpUser.user[0].googleId
             ? 'Google'
             : tmpUser.user[0].facebookId
             ? 'Facebook'
             : 'Unknown';
+          vUser.unprocess = hasUnProcess(tmpUser.propertyData.waterMeter);
 
           return vUser;
         });
@@ -226,6 +228,34 @@ router.post('/property', (req, res) => {
         result.status = '0';
         result.data = {};
         result.data.description = authUser.propertyInfo;
+        result.data.data = {};
+        result.data.data.waterMeter = authUser.propertyData.waterMeter;
+
+        res.send(result);
+      } else {
+        console.log('... Skip request, no user found .. ');
+        result.status = '0';
+        res.send(result);
+      }
+    });
+  } else {
+    console.log('... Skip request, no session or not verified .. ');
+    res.send(401, 'Not Authorized!');
+  }
+});
+
+router.post('/propertybyadmin', (req, res) => {
+  var request = req.body.request;
+  var authUserId = request.data.authUserId;
+  console.log('... Retrieve property requests for admin: ' + authUserId + '..');
+
+  var result = {};
+  if (req.session && req.session.logged && req.session.user && req.session.isAdmin) {
+    AuthUser.findById(authUserId, function (err, authUser) {
+      if (authUser) {
+        result.status = '0';
+        result.data = {};
+        result.data.propertyInfo = authUser.propertyInfo;
         result.data.data = {};
         result.data.data.waterMeter = authUser.propertyData.waterMeter;
 
@@ -308,5 +338,81 @@ router.post('/clearsession', (req, res) => {
     }
   });
 });
+
+router.post('/unverifycount', (req, res) => {
+  console.log('... Get unVerify count requests .. ');
+
+  var result = {};
+  var count = 0;
+  if (req.session && req.session.logged && req.session.user && req.session.isAdmin) {
+    AuthUser.find({ isAdmin: { $in: [null, false] } }, function (err, authUsers) {
+      if (authUsers) {
+        authUsers.forEach((tmpUser) => {
+          if (!tmpUser.verified) {
+            count++;
+          }
+
+          tmpUser.propertyData.waterMeter.forEach((item) => {
+            if (!item.acceptFlag) {
+              count++;
+            }
+          });
+        });
+
+        result.status = '0';
+        result.count = count;
+        res.send(result);
+      } else {
+        result.status = '0';
+        result.count = count;
+        res.send(result);
+      }
+    });
+  } else {
+    console.log('... Skip request, no session or not admin .. ');
+    res.send(401, 'Not Authorized!');
+  }
+});
+
+router.post('/confirmreading', (req, res) => {
+  var request = req.body.request;
+  var authUserId = request.data.authUserId;
+  var month = request.data.month;
+  console.log('... Confirm reading requests for ' + authUserId + ', ' + month + '..');
+
+  var result = {};
+  if (req.session && req.session.logged && req.session.user && req.session.isAdmin) {
+    AuthUser.findById(authUserId, function (err, authUser) {
+      if (authUser) {
+        authUser.propertyData.waterMeter.forEach((item) => {
+          if (item.month === month) {
+            item.acceptFlag = true;
+            item.acceptedAt = moment().format();
+          }
+        });
+        authUser.save().then((user) => {
+          result.status = '0';
+          res.send(result);
+        });
+      } else {
+        result.status = '0';
+        res.send(result);
+      }
+    });
+  } else {
+    console.log('... Skip request, no session or not admin .. ');
+    res.send(401, 'Not Authorized!');
+  }
+});
+
+function hasUnProcess(waterMeter) {
+  if (waterMeter.length === 0) {
+    return false;
+  }
+
+  const pendingEntries = waterMeter.filter((item) => !item.acceptFlag);
+
+  return pendingEntries.length > 0;
+}
 
 module.exports = router;
