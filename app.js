@@ -10,8 +10,9 @@ var http = require('http');
 var app = express();
 var mongoose = require('mongoose');
 require('./config/passport');
-
+const schedule = require('node-schedule');
 const slowDown = require('express-slow-down');
+const emailService = require('./services/email-notification');
 
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -85,6 +86,11 @@ app.set('view engine', 'pug');
 app.use(express.static('dist'));
 app.get('/*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
+//Scheduler
+const job = schedule.scheduleJob(process.env.emailSchedule, function () {
+  emailService.checkAndSend();
 });
 
 // error handler

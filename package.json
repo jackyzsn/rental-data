@@ -16,6 +16,7 @@
     "moment": "^2.29.1",
     "mongoose": "^5.12.12",
     "morgan": "~1.9.1",
+    "node-schedule": "^2.0.0",
     "passport": "^0.4.1",
     "passport-facebook": "^3.0.0",
     "passport-google-oauth20": "^2.0.0",
